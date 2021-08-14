@@ -1,44 +1,31 @@
 
-# WhatsAppApi Deployment 
-This document shows you how to set up a Multiple instances of the WhatsApp Business API client on a single machine machine.
+# Migrate Docker Containers Using exist  Data Volume 
+This document shows you how to Back up and restore instances of the WhatsApp Business API client using  exist data volumes.
 
 ## Pre-requisites
 - Install Docker from the following [link](https://docs.docker.com/compose/install/?fbclid=IwAR3Qui2fC8-Q3O4qgOEbCERv0l-HSViw80k3pN3xWvLZcakyeasvMMnctzE)
+- Set up a Multiple instances of the WhatsApp Business API client on a single machine machine from the following [link](https://github.com/MohammedMagdy32/whatsappApiDeployment)
 
 ## Deployment
-1. Clone this repo into your machine
-
-2. Open the folder correponding to related app/port for example will open first instance 9090
+1. after docker containers creation  you should  take snapshot from  exist data volume
 ```sh
-cd WhatsAppApiDeplyment/infrastucutre/app1-9090
+$ docker run --rm --volumes-from dbstore -v $(pwd):/backup ubuntu tar cvf /backup/backup.tar /dbdata
 ```
-
-3. Run the following command to bring the app up 
+   - Launch a new container and mount the volume from the `dbstore` container
+   - Mount a local host directory as `/backup`
+   - Pass a command that tars the contents of the `dbdata` volume to a `backup.tar` file inside our `/backup` directory.
+2. Restore container from backup
+With the backup just created, you can restore it to the same container, or another that you made elsewhere.For example, create a new container named `dbstore2`:
 ```sh
-export WA_API_VERSION=3.35.4; docker-compose up -d
+$ docker run --rm --volumes-from dbstore -v $(pwd):/backup ubuntu tar cvf /backup/backup.tar /dbdata
+```
+3. Then un-tar the backup file in the new container`s data volume: 
+```sh
+$ docker run --rm --volumes-from dbstore2 -v $(pwd):/backup ubuntu bash -c "cd /dbdata && tar xvf /backup/backup.tar --strip 1"
 ```
  
-4. Repeat 2,3 for each app instance by switching between folders under infrastucutre folder based on port 9091,9092,9093,9094,9095
+4. Repeat steps above  for each instance located in machine
 
-### Note
-
-To create new instance of the App, follow the below instruction
-
- Step 1 : Create a Directory for the Setup Scripts  assume call it biz<br>
- ```sh
- mkdir ~/biz; cd ~/biz; 
- ```
- Step 2: Go to this [link](https://github.com/WhatsApp/WhatsApp-Business-API-Setup-Scripts?fbclid=IwAR26iinLgjiaHZVWcUHe0xIsxmNpgx2pSj2B0z8WjFzdkA4_H7I6Gvs4Qo4) and copy  docker-compose.yml and   db.env configuration files from the Installation directory to the directory you created in step 1 <br>
- Step 3 :  Set the WA_API_VERSION Environment Variable <br>
-   ```sh
-  export WA_API_VERSION=3.35.4 
-  ```
-You want to use the version that is listed for WhatsApp Business API for On-premise in the table.follow [link](https://developers.facebook.com/docs/whatsapp/changelog/#recommended)
-
-  Step 4:  Start the WhatsApp Business API Client
-   ```sh
-   docker-compose up -d 
-  ```
 ## Validation
 To make sure the app up and running, run the below command
 ```sh
